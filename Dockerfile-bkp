@@ -1,0 +1,18 @@
+
+FROM node:20-alpine 
+WORKDIR /app 
+
+COPY package*.json ./ 
+RUN npm install 
+COPY . . 
+
+# Generate Prisma client before build 
+RUN npx prisma generate 
+
+# Increase Node heap for TypeScript build 
+ENV NODE_OPTIONS="--max-old-space-size=1536" 
+RUN npm run build 
+
+EXPOSE 3000 
+CMD ["node", "dist/src/index.js"]
+

@@ -1,0 +1,899 @@
+generator client {
+  provider = "prisma-client"
+  output   = "generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Users {
+  id                    String              @id @unique
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  fullName              String              @db.VarChar(280)
+  phoneNumber           String?             @unique @db.VarChar(12)
+  emailId               String?             @unique
+  password              String
+  consent               Boolean             @default(false)
+  dob                   DateTime            @db.Date
+  address               String?             @db.VarChar(2048)
+  pincode               String              @db.VarChar(10)
+  emergencyContact      String?             @db.VarChar(12)
+  profileImage          String?
+  QRCodeURL             String?
+  isSync                Boolean             @default(true)
+  isBlocked             Boolean             @default(false)
+  refreshToken          String?             @default("")
+  subscription          Boolean             @default(false)
+  country               String
+  createdBy             String
+  currentSessionId      String?             @unique
+  isMigrated            Boolean             @default(false)
+  gender                Gender
+  wrongLoginAttempts    Int                 @default(0)
+  blockedAt             DateTime?
+  deviceToken           String?
+  verifiedContactId     VerifiedContactId
+  inAppNotificationSync Boolean             @default(true)
+  referalCode           String              @unique @map("referal_code")
+  referedBy             String?             @map("refered_by")
+  isAppNewVersion       Boolean             @default(true) @map("is_app_new_version")
+  activeUsers           ActiveUsers?
+  appointment           Appointment[]
+  blockReasons          BlockReasons[]
+  ClearNotifications    ClearNotifications?
+  dependant             Dependant[]
+  documents             Documents[]
+  healthRecord          HealthRecord?
+  insurance             Insurance[]
+  medicine              Medicine[]
+  notes                 Notes[]
+  notifications         Notifications[]
+  Subscription          Subscription[]
+  userMessage           UserMessage[]
+  userToAddOn           UserToAddOn[]
+  referer               Users?              @relation("UserReferral", fields: [referedBy], references: [id])
+  referedUsers          Users[]             @relation("UserReferral")
+  setting               UsersSetting?
+  vitalsUserData        VitalsUserData[]
+  usersToVoucher        UsersToVoucher[]
+  vitalSync             vitalSync[]
+  Voucher               Voucher[]           @relation("UsersOnVoucher")
+
+  @@unique([id, referalCode])
+  @@unique([phoneNumber, emergencyContact])
+}
+
+model UsersSetting {
+  appLock      Boolean  @default(false)
+  notification Boolean  @default(false)
+  forUserid    String   @unique
+  id           Int      @id @default(autoincrement())
+  language     Language @default(en)
+  user         Users    @relation(fields: [forUserid], references: [id], onDelete: Cascade)
+}
+
+model ActiveUsers {
+  id        String   @unique
+  timeStamp DateTime @updatedAt
+  user      Users    @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model Notifications {
+  id             Int      @id @default(autoincrement())
+  userId         String
+  content        Json
+  readStatus     Boolean  @default(false)
+  changeAccessOf String?
+  AccessText     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerifiedUsers {
+  id             Int      @id @default(autoincrement())
+  userId         String   @unique
+  fullName       String   @db.VarChar(280)
+  phoneNumber    String?  @unique @db.VarChar(12)
+  emailId        String?  @unique
+  hashedPassword String
+  hashedOTP      String
+  isVerified     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  country        String
+}
+
+model OtpStore {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  phoneNumber String?
+  hashedOTP   String
+  emailId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  createdBy   String   @default("self")
+
+  @@unique([userId, createdBy])
+}
+
+model HealthRecord {
+  id                    Int        @id @default(autoincrement())
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  bloodGroup            String
+  presentDiseases       String[]   @default([])
+  allergies             String[]   @default([])
+  doctorFullName        String?    @db.VarChar(255)
+  docAddress            String?    @db.VarChar(2048)
+  docPhoneNumber        String?    @db.VarChar(12)
+  additionalInformation String?    @db.VarChar(2048)
+  forDependantId        String?    @unique
+  forUserId             String?    @unique
+  dependant             Dependant? @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  user                  Users?     @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+}
+
+model Dependant {
+  id               String           @id @unique
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  fullName         String           @db.VarChar(280)
+  phoneNumber      String?          @db.VarChar(12)
+  dob              DateTime         @db.Date
+  address          String?          @db.VarChar(2048)
+  pincode          String           @db.VarChar(10)
+  emergencyContact String?          @db.VarChar(12)
+  profileImage     String?
+  QRCodeURL        String?
+  isLoggedIn       Boolean          @default(false)
+  userId           String
+  emailId          String?
+  gender           Gender
+  isBlocked        Boolean          @default(false)
+  isSync           Boolean          @default(false)
+  appointment      Appointment[]
+  user             Users            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document         Documents[]
+  healthRecord     HealthRecord?
+  insurance        Insurance[]
+  medicine         Medicine[]
+  notes            Notes[]
+  vitalsUserData   VitalsUserData[]
+  Subscription     Subscription[]
+}
+
+model Appointment {
+  id             Int        @id @default(autoincrement())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  doctorName     String     @db.VarChar(280)
+  description    String     @db.VarChar(2048)
+  apptDate       DateTime   @db.Date
+  apptTime       DateTime   @db.Time(6)
+  createdBy      String     @default("self")
+  forDependantId String?
+  forUserId      String?
+  dependant      Dependant? @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  user           Users?     @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+}
+
+model Notes {
+  id             Int        @id @default(autoincrement())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  title          String
+  description    String
+  color          String
+  createdBy      String
+  forDependantId String?
+  forUserId      String?
+  dependant      Dependant? @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  user           Users?     @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+}
+
+model Familylinks {
+  id                                Int        @id @default(autoincrement())
+  createdAt                         DateTime   @default(now())
+  updatedAt                         DateTime   @updatedAt
+  linkFrom                          String
+  linkTo                            String
+  relation                          String
+  linkType                          LinkType
+  sensitiveDataAccess               Boolean    @default(false)
+  synced                            Boolean    @default(true)
+  accessType                        AccessType @default(view)
+  getMedicineReminderOfSecondayUser Boolean    @default(false)
+  createdBy                         String
+  isActive                          Boolean    @default(true)
+}
+
+model SyncChanges {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  changedBy    String
+  userChanged  String
+  changeType   Changes
+  recordId     String
+  table        String
+  familyMember String
+  synced       Boolean  @default(false)
+}
+
+model Documents {
+  id                 Int        @id @default(autoincrement())
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  documentImage      String
+  documentName       String     @db.VarChar(280)
+  documentCategory   String     @db.VarChar(280)
+  documentConsultant String?    @db.VarChar(280)
+  notes              String?    @db.VarChar(2048)
+  isSensitive        Boolean    @default(false)
+  forDependantId     String?
+  forUserId          String?
+  uploadedBy         String
+  dependant          Dependant? @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  Users              Users?     @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+}
+
+model Insurance {
+  id             Int        @id @default(autoincrement())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  policyNum      String
+  policyName     String
+  policyType     String?
+  policyImg      String?
+  insuranceProv  String?
+  renewalAt      DateTime
+  ifCoPay        Float?     @default(100.00)
+  createdBy      String
+  forDependantId String?
+  forUserId      String?
+  dependant      Dependant? @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  users          Users?     @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+}
+
+model Medicine {
+  id                   Int        @id @default(autoincrement())
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  medName              String     @db.VarChar(280)
+  medUnit              String     @default("tablet")
+  medInventory         Int?
+  medDoctor            String?
+  medIntakeTime        String
+  medIntakePerDose     Int
+  medIntakeFrequency   String
+  medDosage            Int?       @default(1)
+  MedDosageSchedule    DateTime[]
+  startAt              DateTime   @default(now())
+  isActive             Boolean    @default(true)
+  isRefill             Boolean    @default(false)
+  createdBy            String
+  forDependantId       String?
+  forUserId            String?
+  medImage             String?
+  endAt                DateTime?
+  medReminderFrequency String[]   @default([])
+  dependant            Dependant? @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  user                 Users?     @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+}
+
+model Facility {
+  id                Int      @id @default(autoincrement())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  facPhoneNumber    String   @db.VarChar(12)
+  facAddress        String   @db.VarChar(2048)
+  additionalAddress String?  @db.VarChar(2048)
+  facPincode        String   @db.VarChar(10)
+  facSpeciality     String[] @default(["general"])
+  facType           String
+  isActive          Boolean  @default(true)
+  facPrimaryName    String   @db.VarChar(2048)
+  facSecondaryName  String?  @db.VarChar(2048)
+  openTime          String?  @db.VarChar(10)
+  closeTime         String?  @db.VarChar(10)
+  updatedBy         String
+  facImageURL       String
+  lat               Float
+  long              Float
+  // dashboardUser    DashboardUser @relation(fields: [updatedBy], references: [emailId])
+}
+
+model DashboardUser {
+  id               Int      @id @default(autoincrement())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  fullName         String   @db.VarChar(280)
+  emailId          String   @unique
+  role             Role
+  refreshToken     String?  @default("")
+  currentSessionId String?  @unique
+  position         String
+}
+
+model Video {
+  id           Int           @id @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  vidSourceUrl String        @unique
+  isActive     Boolean       @default(true)
+  isSubscribed Boolean       @default(false)
+  priority     Int           @default(0)
+  updatedBy    String
+  title        String        @db.VarChar(2048)
+  description  String?       @db.VarChar(2048) //specifically for reels
+  vidType      VideoType     @default(video)
+  // dashboardUser DashboardUser @relation(fields: [updatedBy], references: [emailId])
+  vimeoDetails vimeoDetails?
+  tags         Tags[]        @relation("TagsToVideo")
+}
+
+model vimeoDetails {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  duration     Int
+  thumbnail    String
+  playableLink String
+  videoId      Int      @unique
+  video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model Advertisement {
+  id              Int               @id @default(autoincrement())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isActive        Boolean           @default(true)
+  advName         String            @db.VarChar(2048)
+  advRedirectLink String?
+  advSourceUrl    String
+  isSubscribed    Boolean           @default(false)
+  priority        Int               @default(1)
+  updatedBy       String
+  advPosition     AdvertisePosition @default(top)
+  advType         AdvertiseType     @default(promotion)
+  advEnd          DateTime?
+  advStart        DateTime?
+  advTimeLimit    Int               @default(3)
+  VoucherId       Int?              @map("voucher_id")
+  // dashboardUser   DashboardUser     @relation(fields: [updatedBy], references: [emailId])
+  voucher         Voucher?          @relation(fields: [VoucherId], references: [id])
+}
+
+model VitalModule {
+  id                 Int              @id @default(autoincrement())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  vitalName          String           @unique
+  vitalCode          String           @unique
+  vitalDataStructure Json[]
+  filters            Json[]
+  updatedBy          String
+  // dashboardUser      DashboardUser    @relation(fields: [updatedBy], references: [emailId])
+  vitalsUserData     VitalsUserData[]
+  vitalSync          vitalSync[]
+}
+
+model VitalsUserData {
+  id              Int         @id @default(autoincrement())
+  createdAt       DateTime    @default(now())
+  vitalRecordData Json
+  createdBy       String      @default("self")
+  recordedOn      DateTime    @default(now())
+  vitalCodeId     String
+  forDependantId  String?
+  forUserId       String?
+  dependant       Dependant?  @relation(fields: [forDependantId], references: [id], onDelete: Cascade)
+  user            Users?      @relation(fields: [forUserId], references: [id], onDelete: Cascade)
+  vitalModule     VitalModule @relation(fields: [vitalCodeId], references: [vitalCode])
+}
+
+model vitalSync {
+  id          Int         @id @default(autoincrement())
+  lastSync    DateTime?
+  vitalCodeId String
+  userId      String
+  user        Users       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vitalModule VitalModule @relation(fields: [vitalCodeId], references: [vitalCode])
+
+  @@unique([userId, vitalCodeId])
+}
+
+model UserMessage {
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  complaintId   BigInt?
+  emailId       String?
+  message       String
+  reply         String?
+  replyBy       String?
+  messageType   MessageType
+  userId        String
+  isReplied     Boolean        @default(false)
+  isRead        Boolean        @default(false)
+  isReopened    Boolean        @default(false)
+  isResolved    Boolean        @default(false)
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  messageImages MessageImage[]
+  // dashboardUser DashboardUser? @relation(fields: [replyBy], references: [emailId])
+  user          Users          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MessageImage {
+  id        Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  messageId Int
+  imageUrl  String
+  message   UserMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model BlockReasons {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  blockReason String
+  blockedBy   String   @default("auto-block")
+  user        Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DeleteAccountReasons {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reason    String
+  deletedby String
+  role      String
+}
+
+model DashboardUserOtpStore {
+  id        Int      @id @default(autoincrement())
+  hashedOTP String
+  emailId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  fullName  String   @db.VarChar(280)
+  position  String
+  role      Role
+}
+
+model ClearNotifications {
+  id                 Int       @id @default(autoincrement())
+  userId             String    @unique
+  localNotifications DateTime?
+  Users              Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Feature {
+  id            Int             @id @default(autoincrement())
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  name          String          @unique @db.VarChar(100)
+  canonicalName cName           @unique
+  description   String          @db.VarChar(500)
+  isActive      Boolean         @default(true) @map("is_active")
+  Addon         Addon[]         @relation("AddonToFeature")
+  metadata      Metadata[]
+  PlanToFeature PlanToFeature[]
+}
+
+model Metadata {
+  id            Int             @id @default(autoincrement())
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  value         Json
+  remark        String
+  featureId     Int             @map("feature_id")
+  feature       Feature         @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  planToFeature PlanToFeature[]
+
+  @@unique([featureId, value])
+}
+
+model Plan {
+  id           Int            @id @default(autoincrement()) //1
+  createdAt    DateTime       @default(now()) @map("created_at") //12/04/25
+  updatedAt    DateTime       @updatedAt @map("updated_at") //12/04/25
+  name         String         @unique @db.VarChar(100) //premium plan
+  planCode     String         @unique @map("plan_code") //premium_123
+  updatedBy    String
+  notes        String //demo
+  planVariants PlanVariants[] //1
+}
+
+model PlanVariants {
+  id                 Int             @id @default(autoincrement()) //1
+  name               String          @db.VarChar(100) //yearly
+  createdAt          DateTime        @default(now()) @map("created_at") //12/04/25
+  updatedAt          DateTime        @default(now()) @updatedAt @map("updated_at") //12/04/25
+  period             PlanPeriod // yearly
+  interval           Int //1
+  amount             Float //100
+  isDefault          Boolean         @default(false) @map("is_default") //true
+  variantDescription String          @default("New Plan Variant") @map("variant_description") @db.VarChar(1024)
+  defaultExpiry      DateTime?       @map("default_expiry") //
+  isActive           Boolean         @default(true) @map("is_active") //true
+  planId             Int
+  plan               Plan            @relation(fields: [planId], references: [id], onDelete: Cascade)
+  updatedBy          String
+  PlanToFeature      PlanToFeature[]
+  Subscription       Subscription[]
+  Voucher            Voucher[]
+
+  @@unique([period, interval, planId])
+}
+
+model PlanToFeature {
+  id            Int          @id @default(autoincrement())
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  planVariantId Int          @map("plan_variant_id")
+  featureId     Int          @map("feature_id")
+  MetadataId    Int          @map("metadata_id")
+  feature       Feature      @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  metadata      Metadata     @relation(fields: [MetadataId], references: [id], onDelete: Cascade)
+  planVariants  PlanVariants @relation(fields: [planVariantId], references: [id], onDelete: Cascade)
+}
+
+model Voucher {
+  id                Int              @id @default(autoincrement())
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  name              String
+  code              String           @unique
+  type              VoucherType      @default(generic)
+  partnerEmail      String?          @map("partner_email")
+  description       String
+  minSpend          Int?             @default(0) @map("min_spend")
+  amount            Float
+  expiresAt         DateTime?        @map("expires_at")
+  redeemLimit       Int?             @map("redeem_limit")
+  availedCount      Int              @default(0) @map("availed_count")
+  isActive          Boolean          @default(true) @map("is_active")
+  lockedAt          DateTime?        @map("locked_at")
+  lockedBy          String?
+  updatedBy         String
+  advertisementType String?          @map("advertisement_type")
+  voucherBanner     String?          @map("voucher_banner")
+  clientLogo        String?          @map("client_logo")
+  advertisement     Advertisement[]
+  usersToVoucher    UsersToVoucher[]
+  user              Users[]          @relation("UsersOnVoucher")
+  planVariantId     Int?             @map("plan_variant_id")
+  planVariant       PlanVariants?    @relation(fields: [planVariantId], references: [id], onDelete: Cascade)
+}
+
+model UsersToVoucher {
+  id             Int           @id @default(autoincrement())
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  status         String        @default("pending")
+  userId         String
+  voucherId      Int
+  subscriptionId Int?          @unique
+  user           Users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucher        Voucher       @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, voucherId])
+  @@map("UsersToVoucher")
+}
+
+model Addon {
+  id          Int           @id @default(autoincrement())
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  name        String        @unique @db.VarChar(100)
+  value       Json
+  description String        @db.VarChar(500)
+  period      PlanPeriod
+  interval    Int?
+  isActive    Boolean       @default(true) @map("is_active")
+  amount      Float
+  currency    String        @default("INR")
+  updatedBy   String
+  featureId   Int
+  feature     Feature       @relation("AddonToFeature", fields: [featureId], references: [id], onDelete: Cascade)
+  userToAddOn UserToAddOn[]
+}
+
+model UserToAddOn {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  expiresAt DateTime @map("expires_at")
+  addonId   Int      @map("addon_id")
+  userId    String   @map("user_id")
+  addon     Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FAQS {
+  id       Int     @id @default(autoincrement())
+  question String
+  answer   String
+  type     Faqtype
+}
+
+model Subscription {
+  id              Int             @id @default(autoincrement())
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  expiresAt       DateTime?       @map("expires_at")
+  planVariantId   Int             @map("plan_variant_id")
+  userId          String?         @map("user_id")
+  dependantId     String?         @map("dependant_id")
+  status          Status          @default(active)
+  planVariants    PlanVariants    @relation(fields: [planVariantId], references: [id], onDelete: Cascade)
+  user            Users?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dependant       Dependant?      @relation(fields: [dependantId], references: [id], onDelete: Cascade)
+  usersToVouchers UsersToVoucher?
+}
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now()) @map("created_at")
+  txnid         String   @unique
+  paymentMode   String   @map("payment_mode")
+  paymentSource String   @default("payu") @map("payment_source")
+  bankRefNumber String   @map("bank_ref_number")
+  totalAmount   Float    @map("total_amount")
+  currency      String
+  userId        String   @map("user_id")
+  userFullName  String   @map("user_full_name")
+  userAddress   String?  @map("user_address")
+  gst           Int
+  error         String
+  mihpayid      String
+  customerGst   String?  @map("customer_gst")
+  errorMessage  String   @map("error_message")
+  paymentStatus String   @map("payment_status")
+  items         Items[]
+  //  Refunds       Refund[]
+}
+
+// model Refund {
+//   id            Int         @id @default(autoincrement())
+//   createdAt     DateTime    @default(now()) @map("created_at")
+//   refundId      String      @unique
+//   refundStatus  String      @map("refund_status")
+//   refundAmount  Float       @map("refund_amount")
+//   statusCode    Int         @map("status_code")
+//   statusMessage String      @map("status_message")
+//   transactionId Int         @map("transaction_id")
+//   Transaction   Transaction @relation(fields: [transactionId], references: [id])
+// }
+
+model Items {
+  id            Int         @id @default(autoincrement())
+  createdAt     DateTime    @default(now()) @map("created_at")
+  name          String
+  type          ItemType
+  planDetails   Json?
+  amount        Int
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model Blog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  title     String   @unique
+  isActive  Boolean  @default(true)
+  author    String
+  updatedBy String   @map("updated_by")
+  thumbnail String
+  content   String
+  readTime  Int      @map("read_time")
+  tags      Tags[]   @relation("BlogToTags")
+}
+
+model Story {
+  id         Int          @id @default(autoincrement())
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  title      String       @unique
+  isActive   Boolean      @default(true)
+  updatedBy  String       @map("updated_by")
+  storyImage StoryImage[]
+  tags       Tags[]       @relation("StoryToTags")
+}
+
+model StoryImage {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  storyId     Int
+  title       String?  @db.VarChar(280)
+  description String?  @db.VarChar(2048)
+  filename    String
+  story       Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  name        String
+  address     String
+  cin         String
+  gstin       String
+  msmeNo      String   @map("msme_no")
+  gst         Int
+  companyLogo String   @map("company_logo")
+  signatory   String
+  website     String
+  email       String
+  phoneNumber String   @map("phone_number")
+}
+
+model Tags {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  name      String   @unique
+  blog      Blog[]   @relation("BlogToTags")
+  story     Story[]  @relation("StoryToTags")
+  video     Video[]  @relation("TagsToVideo")
+}
+
+model Integrations {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  embedLink String?  @map("embed_link")
+  isActive  Boolean  @map("is_active")
+}
+
+model AppVersion {
+  id              Int               @id @default(autoincrement())
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  appVersion      String            @map("app_version")
+  appEnv          AppEnv            @map("app_env")
+  isForce         Boolean           @default(false) @map("is_force")
+  isActive        Boolean           @map("is_active")
+  versionFeatures VersionFeatures[]
+}
+
+model VersionFeatures {
+  id                 Int        @id @default(autoincrement())
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  appVersionId       Int
+  featureDescription String     @map("feature_description")
+  appVersion         AppVersion @relation(fields: [appVersionId], references: [id], onDelete: Cascade)
+}
+
+enum AppEnv {
+  ios
+  android
+}
+
+enum ItemType {
+  plan
+  voucher
+  add_on
+}
+
+enum PlanPeriod {
+  weekly
+  monthly
+  yearly
+  unlimited
+}
+
+enum MessageType {
+  complaint
+  feedback
+}
+
+enum VoucherType {
+  generic
+  partner
+  referal
+}
+
+enum Status {
+  active
+  inactive
+  upcoming
+}
+
+enum Faqtype {
+  payment
+  selfAwarness
+  general
+}
+
+enum cName {
+  family_care
+  health_analysis
+  video
+  blog
+  story
+  reel
+  sos
+  appointment_booking
+  discount_on_medicine
+  medicine_delivery
+  insurance
+  storage
+  advertisement
+}
+
+enum Value {
+  Int
+  String
+  Boolean
+}
+
+enum Role {
+  auditor
+  admin
+  superAdmin
+}
+
+enum LinkType {
+  minor
+  subaccount
+  existing
+  sharedMinor
+}
+
+enum AccessType {
+  view
+  manage
+}
+
+enum VerifiedContactId {
+  phoneNumber
+  emailId
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum Language {
+  en
+  hn
+  mr
+}
+
+enum Changes {
+  create
+  update
+  delete
+}
+
+enum AdvertiseType {
+  promotion
+  feature
+}
+
+enum AdvertisePosition {
+  top
+  bottom
+}
+
+enum NotificationCategories {
+  family_care
+}
+
+enum VideoType {
+  video
+  reel
+  default_video
+}
