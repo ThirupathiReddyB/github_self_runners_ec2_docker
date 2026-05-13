@@ -8,6 +8,7 @@ on:
 jobs:
   build-deploy:
     name: Build Push Deploy
+
     runs-on: self-hosted
 
     environment: dev
@@ -15,6 +16,11 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+[O
+      - name: Verify Docker
+        run: |
+          docker --version
+          aws --version
 
       - name: Login to Amazon ECR
         run: |
@@ -22,13 +28,23 @@ jobs:
           docker login --username AWS --password-stdin \
           ${{ secrets.ECR_REGISTRY }}
 
+      - name: Create Environment File
+        run: |
+          echo "${{ vars.DEV_ENV }}" > .env
+
+      - name: Verify Environment File
+        run: |
+          ls -la
+          cat .env | head -5
+
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
 
       - name: Tag Docker Image
         run: |
-          docker tag ${{ secrets.ECR_REPOSITORY }}:latest \
+          docker tag \
+          ${{ secrets.ECR_REPOSITORY }}:latest \
           ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
 
       - name: Push Docker Image to ECR
@@ -54,8 +70,9 @@ jobs:
         run: |
           docker run -d \
             --name node-app \
-            -p 3000:3000 \
             --restart always \
+            -p 3000:3000 \
+            --env-file .env \
             ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
 
       - name: Verify Running Containers
