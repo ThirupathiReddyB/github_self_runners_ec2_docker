@@ -8,7 +8,7 @@ on:
 jobs:
   build-deploy:
     name: Build Push Deploy
-    runs-on: my-runner
+    runs-on: self-hosted
 
     environment: dev
 
