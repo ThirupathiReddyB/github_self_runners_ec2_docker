@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: github-runner
+    platform: linux/amd64
+    restart: unless-stopped
+    env_file:
+      - .env
