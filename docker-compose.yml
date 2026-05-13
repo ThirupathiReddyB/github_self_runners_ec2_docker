@@ -5,8 +5,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: github-runner
+
     platform: linux/amd64
+
     restart: unless-stopped
+
     env_file:
       - .env
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
