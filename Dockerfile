@@ -7,6 +7,8 @@ COPY package*.json ./
 RUN npm i
 
 COPY . .
+RUN ls -la
+
 
 RUN npx prisma generate
 
