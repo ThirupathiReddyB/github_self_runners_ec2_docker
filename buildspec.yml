@@ -1,6 +1,9 @@
 version: 0.2
 
 env:
+  secrets-manager:
+    ENV_FILE: "testing-dev"
+
   variables:
     AWS_DEFAULT_REGION: ap-south-1
     IMAGE_REPO_NAME: nodejs-testing
@@ -9,19 +12,19 @@ env:
 phases:
   pre_build:
     commands:
+      - echo "$ENV_FILE" > .env
+      - cat .env | head -5
+
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
 
-      - echo Logging into ECR
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI
 
   build:
     commands:
-      - echo Build Started
       - docker build -t $IMAGE_REPO_NAME .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Push Image
       - docker push $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
