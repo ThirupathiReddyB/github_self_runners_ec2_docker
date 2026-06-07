@@ -1,0 +1,9 @@
+version: 0.0
+
+os: ubuntu
+
+hooks:
+  AfterInstall:
+    - location: scripts/deploy.sh
+      timeout: 900
+      runas: root
