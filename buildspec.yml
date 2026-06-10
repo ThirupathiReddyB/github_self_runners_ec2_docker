@@ -42,7 +42,7 @@ phases:
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI &&
         sudo docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG &&
         sudo docker stop nodejs-testing || true &&
-        sudo ocker rm nodejs-testing || true &&
+        sudo docker rm nodejs-testing || true &&
         sudo docker run -d \
           --name nodejs-testing \
           -p 80:3000 \
