@@ -26,28 +26,26 @@ phases:
       - mkdir -p ~/.ssh
       - echo "$EC2_KEY" > ~/.ssh/id_rsa
       - chmod 600 ~/.ssh/id_rsa
-      
 
   build:
     commands:
       - docker build -t $IMAGE_REPO_NAME .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
 
-post_build:
-  commands:
-    - docker push $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+  post_build:
+    commands:
+      - docker push $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
 
-    - |
-      ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
-        sudo aws ecr get-login-password --region $AWS_DEFAULT_REGION | sudo docker login --username AWS --password-stdin $ECR_URI
+      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo aws ecr get-login-password --region $AWS_DEFAULT_REGION | sudo docker login --username AWS --password-stdin $ECR_URI"
 
-        sudo docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG"
 
-        sudo docker rm -f nodejs-testing || true
+      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker rm -f nodejs-testing || true"
 
-        sudo docker run -d \
-          --name nodejs-testing \
-          -p 80:3000 \
-          --restart unless-stopped \
-          $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
-      "
+      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker run -d --name nodejs-testing -p 80:3000 --restart unless-stopped $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG"
+
+      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker ps"
+
+artifacts:
+  files:
+    - '**/*'
