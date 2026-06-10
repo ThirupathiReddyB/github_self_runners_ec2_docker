@@ -40,10 +40,10 @@ phases:
       - |
         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI &&
-        docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG &&
-        docker stop nodejs-testing || true &&
-        docker rm nodejs-testing || true &&
-        docker run -d \
+        sudo docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG &&
+        sudo docker stop nodejs-testing || true &&
+        dsudo ocker rm nodejs-testing || true &&
+        sudo docker run -d \
           --name nodejs-testing \
           -p 80:3000 \
           --restart unless-stopped \
