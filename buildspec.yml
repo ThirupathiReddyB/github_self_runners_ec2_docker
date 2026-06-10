@@ -37,15 +37,17 @@ post_build:
   commands:
     - docker push $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
 
-    - >
-      ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
-      sudo aws ecr get-login-password --region ap-south-1 |
-      sudo docker login --username AWS --password-stdin '"$ECR_URI"' &&
-      sudo docker pull '"$ECR_URI"'/'"$IMAGE_REPO_NAME"':'"$IMAGE_TAG"' &&
-      sudo docker rm -f nodejs-testing || true &&
-      sudo docker run -d
-      --name nodejs-testing
-      -p 80:3000
-      --restart unless-stopped
-      '"$ECR_URI"'/'"$IMAGE_REPO_NAME"':'"$IMAGE_TAG"'
-      '
+    - |
+      ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
+        sudo aws ecr get-login-password --region $AWS_DEFAULT_REGION | sudo docker login --username AWS --password-stdin $ECR_URI
+
+        sudo docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+
+        sudo docker rm -f nodejs-testing || true
+
+        sudo docker run -d \
+          --name nodejs-testing \
+          -p 80:3000 \
+          --restart unless-stopped \
+          $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+      "
