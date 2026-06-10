@@ -3,11 +3,14 @@ version: 0.2
 env:
   secrets-manager:
     ENV_FILE: "testing-dev"
+    EC2_KEY: "test-dev"
 
   variables:
     AWS_DEFAULT_REGION: ap-south-1
     IMAGE_REPO_NAME: nodejs-testing
     IMAGE_TAG: latest
+    EC2_HOST: 13.234.19.159
+    EC2_USER: ubuntu
 
 phases:
   pre_build:
@@ -20,6 +23,11 @@ phases:
 
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI
 
+      - mkdir -p ~/.ssh
+      - echo "$EC2_KEY" > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      
+
   build:
     commands:
       - docker build -t $IMAGE_REPO_NAME .
@@ -28,3 +36,16 @@ phases:
   post_build:
     commands:
       - docker push $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+
+      - |
+        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
+        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI &&
+        docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG &&
+        docker stop nodejs-testing || true &&
+        docker rm nodejs-testing || true &&
+        docker run -d \
+          --name nodejs-testing \
+          -p 80:3000 \
+          --restart unless-stopped \
+          $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+        "
