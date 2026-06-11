@@ -9,7 +9,7 @@ env:
     AWS_DEFAULT_REGION: ap-south-1
     IMAGE_REPO_NAME: nodejs-testing
     IMAGE_TAG: latest
-    EC2_HOST: 13.234.19.159
+    EC2_HOST: 43.205.116.136
     EC2_USER: ubuntu
 
 phases:
