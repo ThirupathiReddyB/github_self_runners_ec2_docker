@@ -36,15 +36,15 @@ phases:
     commands:
       - docker push $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
 
-      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "echo '$ENV_FILE' > /home/ubuntu/.env"
+    
 
       - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo aws ecr get-login-password --region $AWS_DEFAULT_REGION | sudo docker login --username AWS --password-stdin $ECR_URI"
 
       - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker pull $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG"
 
-      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker rm -f nodejs-testing || true"
+      # - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker rm -f nodejs-testing || true"
 
-      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker run -d --name nodejs-testing -p 80:3000 --restart unless-stopped $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG"
+      - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker run -d --env-file /home/ubuntu/.env --name nodejs-testing -p 80:3000 --restart unless-stopped $ECR_URI/$IMAGE_REPO_NAME:$IMAGE_TAG"
 
       - ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "sudo docker ps"
 
